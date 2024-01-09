@@ -23,9 +23,16 @@ namespace S3MB
 		unsigned char* pZippedData = new(std::nothrow) unsigned char[nZippedSize];
 		dataStream.Load(pZippedData, nZippedSize);
 
-		if (!UnZipData(streamUnZipped, nTotalLength, pZippedData, nZippedSize))// 解压数据流
+		if (nCompressedType == 1)
 		{
-			return false;
+			if (!UnZipData(streamUnZipped, nTotalLength, pZippedData, nZippedSize))// 解压数据流
+			{
+				return false;
+			}
+		}
+		else
+		{
+			streamUnZipped.Init(pZippedData, nZippedSize, true);
 		}
 
 		unsigned int nOptions = 0;
@@ -141,9 +148,8 @@ namespace S3MB
 			LoadVertex(streamVertexPackage, pVertexDataPackage);
 			LoadNormal(streamVertexPackage, pVertexDataPackage);
 			LoadVertexColor(streamVertexPackage, pVertexDataPackage);
-			unsigned short nTextCount = 0;
-			LoadTextureCoords(streamVertexPackage, pVertexDataPackage, nTextCount);
-			LoadInstanceInfo(streamVertexPackage, pVertexDataPackage, nTextCount, fVersion);
+			LoadTextureCoords(streamVertexPackage, pVertexDataPackage);
+			LoadInstanceInfo(streamVertexPackage, pVertexDataPackage, fVersion);
 			LoadVertexAttributeExtension(streamVertexPackage, pVertexDataPackage);
 			LoadTangent(streamVertexPackage, pVertexDataPackage);
 
@@ -160,6 +166,10 @@ namespace S3MB
 			S3MBTools::LoadStream(streamSkeleton, streamDraco);
 
 			bool bResult = LoadDraco(streamDraco, pVertexDataPackage, arrIndexPackage, fVersion);
+			if (GREATER_OR_EQUAL(fVersion, S3MB_VERSIONV3_0_1))
+			{
+				LoadInstanceInfo(streamDraco, pVertexDataPackage, fVersion);
+			}
 			return bResult;
 		}
 		return true;
@@ -178,6 +188,11 @@ namespace S3MB
 		stream >> nPosUniqueID;
 		stream >> nNormalUniqueID;
 		stream >> nColorUniqueID;
+		if (EQUAL(fVersion,S3MB_VERSIONV3))
+		{
+			int nSecColor = -1;
+			stream >> nSecColor;
+		}
 
 		compressInfo.m_posInfo.SetUniqueID(nPosUniqueID);
 		compressInfo.m_normalInfo.SetUniqueID(nNormalUniqueID);
@@ -409,8 +424,9 @@ namespace S3MB
 		return true;
 	}
 
-	bool S3MBTools::LoadTextureCoords(MemoryStream& streamSkeleton, VertexDataPackage*& pVertexDataPackage, unsigned short& nTextureCoord)
+	bool S3MBTools::LoadTextureCoords(MemoryStream& streamSkeleton, VertexDataPackage*& pVertexDataPackage)
 	{
+		unsigned short nTextureCoord;
 		streamSkeleton >> nTextureCoord;
 
 		unsigned char nByte = 0;
@@ -432,7 +448,7 @@ namespace S3MB
 		return true;
 	}
 
-	bool S3MBTools::LoadInstanceInfo(MemoryStream& streamSkeleton, VertexDataPackage*& pVertexDataPackage, unsigned short& nTextureCoord, float fVersion)
+	bool S3MBTools::LoadInstanceInfo(MemoryStream& streamSkeleton, VertexDataPackage*& pVertexDataPackage, float fVersion)
 	{
 		unsigned char nByte = 0;
 		unsigned short nInstanceInfo = 0;
@@ -1691,7 +1707,7 @@ namespace S3MB
 			SaveNormal(pVertexDataPackage, streamVertexPackage);
 			SaveVertexColor(pVertexDataPackage, streamVertexPackage);
 			SaveTextureCoords(pVertexDataPackage, streamVertexPackage);
-			SaveInstanceInfo(pVertexDataPackage, streamVertexPackage, fVersion);
+			SaveInstanceInfo(pVertexDataPackage, streamVertexPackage);
 			SaveVertexAttributeExtension(pVertexDataPackage, streamVertexPackage);
 			SaveTangent(pVertexDataPackage, streamVertexPackage);
 			SaveStream(streamSkeleton, streamVertexPackage);
@@ -1707,6 +1723,7 @@ namespace S3MB
 			MemoryStream streamDataPackage;
 			streamDataPackage.Init();
 			SaveDraco(pVertexDataPackage, arrIndexPackage, SkeletonCompParam.m_dracoParam, streamDataPackage, fVersion);
+			SaveInstanceInfo(pVertexDataPackage, streamDataPackage);
 			SaveStream(streamSkeleton, streamDataPackage);
 		}	
 		return true;
@@ -1754,12 +1771,10 @@ namespace S3MB
 			stream << dracoCompressedInfo.m_texCoordInfo[i].GetUniqueID();
 		}
 
-		unsigned int nVertexAttCount = 0;
-		stream << nVertexAttCount;
-		for (int i = 0; i < nVertexAttCount; i++)
+		stream << dracoCompressedInfo.m_nVertexAttInfoCount;
+		for (int i = 0; i < dracoCompressedInfo.m_nVertexAttInfoCount; i++)
 		{
-			int nVertexAttInfoID = 0;
-			stream << nVertexAttInfoID;
+			stream << dracoCompressedInfo.m_pVertexAttInfo[i].GetUniqueID();
 		}
 		
 
@@ -1923,7 +1938,7 @@ namespace S3MB
 		return true;
 	}
 
-	bool S3MBTools::SaveInstanceInfo(VertexDataPackage* pVertexDataPack, MemoryStream& stream, float fVersion)
+	bool S3MBTools::SaveInstanceInfo(VertexDataPackage* pVertexDataPack, MemoryStream& stream)
 	{
 		unsigned char nByte = 0;
 		if (pVertexDataPack->m_vecInstanceInfo.size() == 0)
