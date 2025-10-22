@@ -20,6 +20,11 @@ const char* TexCompNONE = "不压缩";
 const char* VerCompNONE = "不压缩";
 
 #ifdef WIN32
+QString TypeModel = FileTypeModel;
+QString TypeObliquePhotogrammetry = FileTypeObliquePhotogrammetry;
+QString TexDXT = TexCompDXT;
+QString TexNONE = TexCompNONE;
+QString VerNONE = VerCompNONE;
 QString buttonOK = "确定";
 QString buttonCancle = "取消";
 QString waitText = "...";
@@ -34,11 +39,11 @@ QString waiting = "正在执行...";
 QString openFile = "打开";
 #else
 QTextCodec* codec = QTextCodec::codecForName("GBK");
-QString FileTypeModel = codec->toUnicode(FileTypeModel);
-QString FileTypeObliquePhotogrammetry = codec->toUnicode(FileTypeObliquePhotogrammetry);
-QString TexCompDXT = codec->toUnicode(TexCompDXT);
-QString TexCompNONE = codec->toUnicode(TexCompNONE);
-QString VerCompNONE = codec->toUnicode(VerCompNONE);
+QString TypeModel = codec->toUnicode(FileTypeModel);
+QString TypeObliquePhotogrammetry = codec->toUnicode(FileTypeObliquePhotogrammetry);
+QString TexDXT = codec->toUnicode(TexCompDXT);
+QString TexNONE = codec->toUnicode(TexCompNONE);
+QString VerNONE = codec->toUnicode(VerCompNONE);
 QString buttonOK = codec->toUnicode("确定");
 QString buttonCancle = codec->toUnicode("取消");
 QString waitText = codec->toUnicode("...");
@@ -66,17 +71,17 @@ Dialog3DTilesToS3MB::Dialog3DTilesToS3MB(QWidget *parent)
     connect(m_desEdit, SIGNAL(textEdited(QString)), this, SLOT(handleTextEditedEvent()));
 
 	QStringListModel* fileTypeModel = new QStringListModel(this);
-    fileTypeModel->setStringList(QStringList()<< FileTypeModel << FileTypeObliquePhotogrammetry);
+    fileTypeModel->setStringList(QStringList()<< TypeModel << TypeObliquePhotogrammetry);
 	m_fileTypeBox = new QComboBox();
 	m_fileTypeBox->setModel(fileTypeModel);
 
 	QStringListModel* texCompModel = new QStringListModel(this);
-    texCompModel->setStringList(QStringList()<< TexCompDXT << TexCompNONE);
+    texCompModel->setStringList(QStringList()<< TexDXT << TexNONE);
 	m_texCompBox = new QComboBox();
 	m_texCompBox->setModel(texCompModel);
 
 	QStringListModel* verCompModel = new QStringListModel(this);
-    verCompModel->setStringList(QStringList()<< VerCompNONE);
+    verCompModel->setStringList(QStringList()<< VerNONE);
 	m_verCompBox = new QComboBox();
 	m_verCompBox->setModel(verCompModel);
 
@@ -210,7 +215,7 @@ void Dialog3DTilesToS3MB::handleSrcFileButtonClickedEvent()
 {
     QFileDialog* pFileSelectDialog = new QFileDialog(this);
     pFileSelectDialog->setWindowTitle(openFile);
-    pFileSelectDialog->setNameFilter(tr("File(*.json)"));
+    pFileSelectDialog->setNameFilter("Json files(*.json)");
     m_srcEdit->setText(pFileSelectDialog->getOpenFileName());
     handleTextEditedEvent();
 }
